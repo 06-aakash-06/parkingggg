@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Your Parking Spaces</h2>
+    <a href="{% url 'add_parking_space' %}" class="btn btn-success mb-3">Add New Parking Space</a>
+    
+    <div class="row">
+        {% for parking in parking_spaces %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                {% if parking.images.first %}
+                <img src="{{ parking.images.first.image.url }}" class="card-img-top" alt="{{ parking.name }}">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ parking.name }}</h5>
+                    <p class="card-text">{{ parking.address }}, {{ parking.city }}</p>
+                    <p>Available spots: {{ parking.available_spots }}/{{ parking.total_spots }}</p>
+                    <a href="{% url 'parking_space_detail' pk=parking.pk %}" class="btn btn-primary">Manage</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

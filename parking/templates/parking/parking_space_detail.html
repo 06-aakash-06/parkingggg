@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ parking_space.name }}</h2>
+    <p>{{ parking_space.address }}, {{ parking_space.city }}</p>
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <h4>Add Parking Spot</h4>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ spot_form.as_p }}
+                <button type="submit" name="add_spot" class="btn btn-primary">Add Spot</button>
+            </form>
+        </div>
+        
+        <div class="col-md-6">
+            <h4>Add Parking Image</h4>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ image_form.as_p }}
+                <button type="submit" name="add_image" class="btn btn-primary">Add Image</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <h4>Parking Spots</h4>
+            <ul class="list-group">
+                {% for spot in spots %}
+                <li class="list-group-item">
+                    Spot {{ spot.spot_number }} - 
+                    {% if spot.is_available %}Available{% else %}Occupied{% endif %}
+                    {% if spot.is_ev_charging %}(EV Charging){% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div class="col-md-6">
+            <h4>Parking Images</h4>
+            <div class="row">
+                {% for image in images %}
+                <div class="col-md-4 mb-3">
+                    <img src="{{ image.image.url }}" class="img-fluid" alt="Parking Image">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

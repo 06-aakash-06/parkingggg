@@ -1,0 +1,300 @@
+<!-- templates/parking/detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    #detailMap {
+        height: 400px;
+        width: 100%;
+        border-radius: 8px;
+    }
+    .amenity-badge {
+        margin-right: 5px;
+        margin-bottom: 5px;
+    }
+    .booking-form {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+    }
+    .image-gallery {
+        margin-bottom: 20px;
+    }
+    .main-image {
+        height: 400px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    .thumbnail {
+        height: 80px;
+        object-fit: cover;
+        cursor: pointer;
+        border-radius: 4px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        opacity: 0.7;
+        transition: opacity 0.3s;
+    }
+    .thumbnail:hover, .thumbnail.active {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <h1>{{ parking.name }}</h1>
+            <p class="text-muted">
+                <i class="fas fa-map-marker-alt me-2"></i> {{ parking.address }}
+                {% if parking.distance %}
+                <span class="ms-3"><i class="fas fa-location-arrow me-1"></i> {{ parking.distance|floatformat:1 }} km from you</span>
+                {% endif %}
+            </p>
+            
+            <div class="image-gallery">
+                <div class="mb-3">
+                    <img id="mainImage" src="{% if parking.image %}{{ parking.image.url }}{% else %}{% static 'img/default-parking.jpg' %}{% endif %}" class="main-image w-100" alt="{{ parking.name }}">
+                </div>
+                {% if parking.image %}
+                <div>
+                    <img src="{{ parking.image.url }}" class="thumbnail active" onclick="changeMainImage(this)" data-src="{{ parking.image.url }}">
+                </div>
+                {% endif %}
+                {% for image in parking.images.all %}
+                <div>
+                    <img src="{{ image.image.url }}" class="thumbnail" onclick="changeMainImage(this)" data-src="{{ image.image.url }}">
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="mb-4">
+                <h3>Description</h3>
+                <p>{{ parking.description|linebreaks }}</p>
+            </div>
+            
+            <div class="mb-4">
+                <h3>Amenities</h3>
+                <div>
+                    {% if parking.has_security %}
+                    <span class="badge bg-success amenity-badge"><i class="fas fa-shield-alt me-1"></i> Security</span>
+                    {% endif %}
+                    {% if parking.is_covered %}
+                    <span class="badge bg-primary amenity-badge"><i class="fas fa-umbrella me-1"></i> Covered</span>
+                    {% endif %}
+                    {% if parking.has_cctv %}
+                    <span class="badge bg-info amenity-badge"><i class="fas fa-video me-1"></i> CCTV</span>
+                    {% endif %}
+                    {% if parking.has_lighting %}
+                    <span class="badge bg-warning amenity-badge"><i class="fas fa-lightbulb me-1"></i> Lighting</span>
+                    {% endif %}
+                    {% if parking.is_accessible %}
+                    <span class="badge bg-secondary amenity-badge"><i class="fas fa-wheelchair me-1"></i> Accessible</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h3>Location</h3>
+                <div id="detailMap"></div>
+            </div>
+            
+            <div class="mb-4">
+                <h3>Reviews</h3>
+                {% if parking.reviews.all %}
+                {% for review in parking.reviews.all %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <h5 class="card-title">{{ review.user.username }}</h5>
+                            <div>
+                                {% for i in "12345" %}
+                                {% if forloop.counter <= review.rating %}
+                                <i class="fas fa-star text-warning"></i>
+                                {% else %}
+                                <i class="far fa-star text-warning"></i>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <p class="card-text">{{ review.comment }}</p>
+                        <small class="text-muted">{{ review.created_at|date:"F j, Y" }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p>No reviews yet.</p>
+                {% endif %}
+                
+                {% if user.is_authenticated and user_has_booked %}
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reviewModal">Add Review</button>
+                
+                <!-- Review Modal -->
+                <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="reviewModalLabel">Add Review</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form method="post" action="{% url 'add_review' parking.id %}">
+                                {% csrf_token %}
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label for="rating" class="form-label">Rating</label>
+                                        <select class="form-select" id="rating" name="rating" required>
+                                            <option value="5">5 - Excellent</option>
+                                            <option value="4">4 - Very Good</option>
+                                            <option value="3">3 - Good</option>
+                                            <option value="2">2 - Fair</option>
+                                            <option value="1">1 - Poor</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="comment" class="form-label">Comment</label>
+                                        <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="booking-form sticky-top" style="top: 20px;">
+                <h3>Book This Spot</h3>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="h4">${{ parking.price_per_hour }}/hr</span>
+                    <span class="badge bg-primary">{{ parking.get_vehicle_type_display }}</span>
+                </div>
+                
+                {% if parking.available_spots > 0 %}
+                <p class="text-success"><i class="fas fa-check-circle me-2"></i> {{ parking.available_spots }} spots available</p>
+                {% else %}
+                <p class="text-danger"><i class="fas fa-times-circle me-2"></i> No spots available</p>
+                {% endif %}
+                
+                {% if user.is_authenticated %}
+                <form method="post" action="{% url 'create_booking' parking.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="start_time" class="form-label">Start Time</label>
+                        <input type="datetime-local" class="form-control" id="start_time" name="start_time" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="end_time" class="form-label">End Time</label>
+                        <input type="datetime-local" class="form-control" id="end_time" name="end_time" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="vehicle_number" class="form-label">Vehicle Number</label>
+                        <input type="text" class="form-control" id="vehicle_number" name="vehicle_number" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" {% if parking.available_spots == 0 %}disabled{% endif %}>
+                        Book Now
+                    </button>
+                </form>
+                {% else %}
+                <div class="alert alert-info">
+                    <p>You need to <a href="{% url 'login' %}?next={% url 'parking_detail' parking.id %}">login</a> to book this parking spot.</p>
+                </div>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="mt-3">
+                    <h5>Parking Rules</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check-circle text-success me-2"></i> No overnight parking without permission</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i> Vehicles must be locked</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i> No commercial activities</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i> Follow posted speed limits</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize the detail map
+    document.addEventListener('DOMContentLoaded', function() {
+        const parkingLat = {{ parking.latitude|default:"40.7128" }};
+        const parkingLng = {{ parking.longitude|default:"-74.0060" }};
+        
+        const map = L.map('detailMap').setView([parkingLat, parkingLng], 15);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Add marker for the parking spot
+        const parkingMarker = L.marker([parkingLat, parkingLng]).addTo(map)
+            .bindPopup(`<b>{{ parking.name }}</b><br>{{ parking.address }}`);
+        
+        // If we have user's location, add it to the map
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const userMarker = L.marker([position.coords.latitude, position.coords.longitude])
+                    .addTo(map)
+                    .bindPopup('Your Location');
+                
+                // Add a line between user and parking
+                const line = L.polyline([
+                    [position.coords.latitude, position.coords.longitude],
+                    [parkingLat, parkingLng]
+                ], {color: 'blue'}).addTo(map);
+            });
+        }
+    });
+    
+    // Change main image when thumbnail is clicked
+    function changeMainImage(element) {
+        document.getElementById('mainImage').src = element.getAttribute('data-src');
+        
+        // Update active thumbnail
+        document.querySelectorAll('.thumbnail').forEach(thumb => {
+            thumb.classList.remove('active');
+        });
+        element.classList.add('active');
+    }
+    
+    // Set default datetime values for booking form
+    document.addEventListener('DOMContentLoaded', function() {
+        const now = new Date();
+        const startTime = document.getElementById('start_time');
+        const endTime = document.getElementById('end_time');
+        
+        // Format date for datetime-local input
+        const formatDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        };
+        
+        // Set start time to now (rounded to nearest 15 minutes)
+        const roundedMinutes = Math.ceil(now.getMinutes() / 15) * 15;
+        now.setMinutes(roundedMinutes);
+        startTime.value = formatDate(now);
+        
+        // Set end time to 1 hour from now
+        const endDate = new Date(now);
+        endDate.setHours(endDate.getHours() + 1);
+        endTime.value = formatDate(endDate);
+    });
+</script>
+{% endblock %}
