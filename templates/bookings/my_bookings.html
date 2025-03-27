@@ -1,0 +1,200 @@
+<!-- templates/bookings/my_bookings.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">My Bookings</h1>
+    
+    <ul class="nav nav-tabs mb-4" id="bookingTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button" role="tab">
+                Upcoming
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past" type="button" role="tab">
+                Past Bookings
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled" type="button" role="tab">
+                Cancelled
+            </button>
+        </li>
+    </ul>
+    
+    <div class="tab-content" id="bookingTabsContent">
+        <div class="tab-pane fade show active" id="upcoming" role="tabpanel">
+            {% if upcoming_bookings %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Parking Spot</th>
+                            <th>Date/Time</th>
+                            <th>Duration</th>
+                            <th>Vehicle</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in upcoming_bookings %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'parking_detail' booking.parking_spot.id %}">{{ booking.parking_spot.name }}</a>
+                            </td>
+                            <td>
+                                {{ booking.start_time|date:"M j, Y" }}<br>
+                                {{ booking.start_time|time }} - {{ booking.end_time|time }}
+                            </td>
+                            <td>{{ booking.duration_hours }} hrs</td>
+                            <td>{{ booking.vehicle_number }}</td>
+                            <td>${{ booking.total_price }}</td>
+                            <td>
+                                <span class="badge bg-success">{{ booking.get_status_display }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'booking_detail' booking.id %}" class="btn btn-sm btn-outline-primary">Details</a>
+                                {% if booking.can_cancel %}
+                                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal{{ booking.id }}">
+                                    Cancel
+                                </button>
+                                
+                                <!-- Cancel Booking Modal -->
+                                <div class="modal fade" id="cancelModal{{ booking.id }}" tabindex="-1" aria-labelledby="cancelModalLabel{{ booking.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="cancelModalLabel{{ booking.id }}">Cancel Booking</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Are you sure you want to cancel your booking at <strong>{{ booking.parking_spot.name }}</strong>?</p>
+                                                <p>Start Time: {{ booking.start_time|date:"M j, Y H:i" }}</p>
+                                                {% if booking.cancellation_fee > 0 %}
+                                                <div class="alert alert-warning">
+                                                    <p>Cancellation fee: ${{ booking.cancellation_fee }}</p>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                <form method="post" action="{% url 'cancel_booking' booking.id %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                You don't have any upcoming bookings.
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="tab-pane fade" id="past" role="tabpanel">
+            {% if past_bookings %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Parking Spot</th>
+                            <th>Date/Time</th>
+                            <th>Duration</th>
+                            <th>Vehicle</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in past_bookings %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'parking_detail' booking.parking_spot.id %}">{{ booking.parking_spot.name }}</a>
+                            </td>
+                            <td>
+                                {{ booking.start_time|date:"M j, Y" }}<br>
+                                {{ booking.start_time|time }} - {{ booking.end_time|time }}
+                            </td>
+                            <td>{{ booking.duration_hours }} hrs</td>
+                            <td>{{ booking.vehicle_number }}</td>
+                            <td>${{ booking.total_price }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ booking.get_status_display }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'booking_detail' booking.id %}" class="btn btn-sm btn-outline-primary">Details</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                You don't have any past bookings.
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="tab-pane fade" id="cancelled" role="tabpanel">
+            {% if cancelled_bookings %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Parking Spot</th>
+                            <th>Date/Time</th>
+                            <th>Duration</th>
+                            <th>Vehicle</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in cancelled_bookings %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'parking_detail' booking.parking_spot.id %}">{{ booking.parking_spot.name }}</a>
+                            </td>
+                            <td>
+                                {{ booking.start_time|date:"M j, Y" }}<br>
+                                {{ booking.start_time|time }} - {{ booking.end_time|time }}
+                            </td>
+                            <td>{{ booking.duration_hours }} hrs</td>
+                            <td>{{ booking.vehicle_number }}</td>
+                            <td>${{ booking.total_price }}</td>
+                            <td>
+                                <span class="badge bg-danger">{{ booking.get_status_display }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'booking_detail' booking.id %}" class="btn btn-sm btn-outline-primary">Details</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                You haven't cancelled any bookings.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

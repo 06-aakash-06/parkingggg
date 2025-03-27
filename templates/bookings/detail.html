@@ -1,0 +1,266 @@
+<!-- templates/bookings/detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Booking Details</h1>
+                <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'completed' %}secondary{% else %}danger{% endif %}">
+                    {{ booking.get_status_display }}
+                </span>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Parking Information</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Parking Spot:</strong></p>
+                            <p><a href="{% url 'parking_detail' booking.parking_spot.id %}">{{ booking.parking_spot.name }}</a></p>
+                            
+                            <p class="mb-1"><strong>Address:</strong></p>
+                            <p>{{ booking.parking_spot.address }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Vehicle Type:</strong></p>
+                            <p>{{ booking.parking_spot.get_vehicle_type_display }}</p>
+                            
+                            <p class="mb-1"><strong>Vehicle Number:</strong></p>
+                            <p>{{ booking.vehicle_number }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Booking Timeline</h5>
+                    <div class="timeline">
+                        <div class="timeline-item {% if booking.status == 'cancelled' %}cancelled{% endif %}">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <h6>Booking Created</h6>
+                                <p class="text-muted">{{ booking.created_at|date:"M j, Y H:i" }}</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item {% if booking.status == 'cancelled' %}cancelled{% endif %}">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <h6>Parking Period</h6>
+                                <p class="text-muted">
+                                    {{ booking.start_time|date:"M j, Y H:i" }} - {{ booking.end_time|date:"H:i" }}<br>
+                                    ({{ booking.duration_hours }} hours)
+                                </p>
+                            </div>
+                        </div>
+                        {% if booking.status == 'completed' %}
+                        <div class="timeline-item">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <h6>Completed</h6>
+                                <p class="text-muted">{{ booking.updated_at|date:"M j, Y H:i" }}</p>
+                            </div>
+                        </div>
+                        {% elif booking.status == 'cancelled' %}
+                        <div class="timeline-item cancelled">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <h6>Cancelled</h6>
+                                <p class="text-muted">{{ booking.updated_at|date:"M j, Y H:i" }}</p>
+                                {% if booking.cancellation_reason %}
+                                <p class="text-muted">Reason: {{ booking.cancellation_reason }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            {% if booking.parking_spot_review %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Your Review</h5>
+                    <div class="d-flex align-items-center mb-2">
+                        {% for i in "12345" %}
+                        {% if forloop.counter <= booking.parking_spot_review.rating %}
+                        <i class="fas fa-star text-warning me-1"></i>
+                        {% else %}
+                        <i class="far fa-star text-warning me-1"></i>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <p>{{ booking.parking_spot_review.comment }}</p>
+                    <small class="text-muted">Posted on {{ booking.parking_spot_review.created_at|date:"M j, Y" }}</small>
+                </div>
+            </div>
+            {% elif booking.status == 'completed' and not booking.parking_spot_review %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Leave a Review</h5>
+                    <form method="post" action="{% url 'add_review' booking.parking_spot.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="booking_id" value="{{ booking.id }}">
+                        <div class="mb-3">
+                            <label class="form-label">Rating</label>
+                            <div class="rating-stars">
+                                {% for i in "54321" %}
+                                <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}" {% if forloop.first %}checked{% endif %}>
+                                <label for="star{{ i }}"><i class="fas fa-star"></i></label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reviewComment" class="form-label">Comment</label>
+                            <textarea class="form-control" id="reviewComment" name="comment" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit Review</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Payment Summary</h5>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal ({{ booking.duration_hours }} hrs @ ${{ booking.parking_spot.price_per_hour }}/hr)</span>
+                        <span>${{ booking.subtotal }}</span>
+                    </div>
+                    
+                    {% if booking.tax_amount > 0 %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tax ({{ booking.tax_percentage }}%)</span>
+                        <span>${{ booking.tax_amount }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if booking.cancellation_fee > 0 %}
+                    <div class="d-flex justify-content-between mb-2 text-danger">
+                        <span>Cancellation Fee</span>
+                        <span>-${{ booking.cancellation_fee }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>Total</span>
+                        <span>${{ booking.total_price }}</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6 class="mb-3">Payment Method</h6>
+                    <div class="d-flex align-items-center">
+                        <i class="fab fa-cc-{{ booking.payment_method|lower }} fa-2x me-3"></i>
+                        <div>
+                            <p class="mb-0">{{ booking.get_payment_method_display }}</p>
+                            <small class="text-muted">Ending with {{ booking.payment_last_four }}</small>
+                        </div>
+                    </div>
+                    
+                    {% if booking.can_cancel %}
+                    <hr>
+                    <button class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                        Cancel Booking
+                    </button>
+                    
+                    <!-- Cancel Booking Modal -->
+                    <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="cancelModalLabel">Cancel Booking</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Are you sure you want to cancel your booking at <strong>{{ booking.parking_spot.name }}</strong>?</p>
+                                    <p>Start Time: {{ booking.start_time|date:"M j, Y H:i" }}</p>
+                                    {% if booking.cancellation_fee > 0 %}
+                                    <div class="alert alert-warning">
+                                        <p>Cancellation fee: ${{ booking.cancellation_fee }}</p>
+                                    </div>
+                                    {% endif %}
+                                    <div class="mb-3">
+                                        <label for="cancellationReason" class="form-label">Reason for cancellation (optional)</label>
+                                        <textarea class="form-control" id="cancellationReason" name="cancellation_reason" rows="3"></textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    <form method="post" action="{% url 'cancel_booking' booking.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    .timeline-item {
+        position: relative;
+        padding-bottom: 20px;
+    }
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+    .timeline-item.cancelled .timeline-point,
+    .timeline-item.cancelled h6 {
+        opacity: 0.5;
+    }
+    .timeline-point {
+        position: absolute;
+        left: -30px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        top: 0;
+    }
+    .timeline-item.cancelled .timeline-point {
+        background-color: #dc3545;
+    }
+    .timeline-content {
+        padding-left: 10px;
+    }
+    .rating-stars {
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+    }
+    .rating-stars input {
+        display: none;
+    }
+    .rating-stars label {
+        font-size: 24px;
+        color: #ddd;
+        cursor: pointer;
+        margin-right: 5px;
+    }
+    .rating-stars input:checked ~ label,
+    .rating-stars label:hover,
+    .rating-stars label:hover ~ label {
+        color: #ffc107;
+    }
+</style>
+{% endblock %}

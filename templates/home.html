@@ -1,0 +1,92 @@
+<!-- templates/home.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="hero-section bg-primary text-white py-5">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold mb-4">Find Parking Made Easy</h1>
+        <p class="lead mb-5">Book your parking spot in advance and save time</p>
+        <a href="{% url 'parking_list' %}" class="btn btn-light btn-lg px-4 me-2">Find Parking</a>
+        {% if not user.is_authenticated %}
+        <a href="{% url 'register' %}" class="btn btn-outline-light btn-lg px-4">Register</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-map-marker-alt fa-3x text-primary mb-3"></i>
+                    <h3 class="h5">Find Nearby Parking</h3>
+                    <p class="text-muted">Discover available parking spots near your destination with our interactive map.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-check fa-3x text-primary mb-3"></i>
+                    <h3 class="h5">Book in Advance</h3>
+                    <p class="text-muted">Reserve your parking spot ahead of time and guarantee your space.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-wallet fa-3x text-primary mb-3"></i>
+                    <h3 class="h5">Secure Payments</h3>
+                    <p class="text-muted">Pay securely online with multiple payment options available.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bg-light py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">How It Works</h2>
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                        <span class="h4 mb-0">1</span>
+                    </div>
+                    <h4 class="h5 mt-3">Search</h4>
+                    <p>Enter your destination and time</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                        <span class="h4 mb-0">2</span>
+                    </div>
+                    <h4 class="h5 mt-3">Select</h4>
+                    <p>Choose from available parking spots</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                        <span class="h4 mb-0">3</span>
+                    </div>
+                    <h4 class="h5 mt-3">Book</h4>
+                    <p>Reserve your spot with a few clicks</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                        <span class="h4 mb-0">4</span>
+                    </div>
+                    <h4 class="h5 mt-3">Park</h4>
+                    <p>Arrive and park with no hassle</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

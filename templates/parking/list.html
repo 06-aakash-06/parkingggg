@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Available Parking Spaces</h1>
+    
+    <!-- Map Container -->
+    <div id="parkingMap" style="height: 500px; width: 100%; margin-bottom: 20px;"></div>
+    
+    <!-- Parking List -->
+    <div class="row">
+        {% for parking in parkings %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ parking.name }}</h5>
+                    <p class="card-text">
+                        <i class="fas fa-map-marker-alt"></i> {{ parking.address }}
+                    </p>
+                    <a href="{% url 'parking_detail' parking.id %}" class="btn btn-primary">View Details</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">No parking spaces available</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize map
+    const map = L.map('parkingMap').setView([8.7642, 78.1348], 13);
+    
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    
+    // Add markers for each parking space
+    {% for parking in parkings %}
+        {% if parking.latitude and parking.longitude %}
+        L.marker([{{ parking.latitude }}, {{ parking.longitude }}]).addTo(map)
+            .bindPopup("<b>{{ parking.name }}</b><br>{{ parking.address }}");
+        {% endif %}
+    {% endfor %}
+});
+</script>
+{% endblock %}
